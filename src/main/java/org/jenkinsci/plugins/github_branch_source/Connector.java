@@ -35,6 +35,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.OkUrlFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,6 +69,7 @@ import jenkins.scm.api.SCMSourceOwner;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.github.config.GitHubServerConfig;
+import org.jenkinsci.plugins.github.internal.GitHubClientCacheOps;
 import org.kohsuke.github.GHRateLimit;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
@@ -321,6 +323,13 @@ public class Connector {
             gb.withRateLimitHandler(CUSTOMIZED);
 
             OkHttpClient client = new OkHttpClient().setProxy(getProxy(host));
+
+	    GitHubServerConfig config = new GitHubServerConfig(credentials!=null ? credentials.getId(): null);
+            client.setCache(GitHubClientCacheOps.toCacheDir().apply(config));
+            if (config.getClientCacheSize() > 0) {
+                Cache cache = GitHubClientCacheOps.toCacheDir().apply(config);
+                client.setCache(cache);
+            }
 
             gb.withConnector(new OkHttpConnector(new OkUrlFactory(client)));
 
